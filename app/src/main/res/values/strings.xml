@@ -1,0 +1,22 @@
+<resources>
+    <string name="app_name">KnuMap</string>
+    <string-array name="college">
+        <item>인문대학</item>
+        <item>사회과학대학</item>
+        <item>자연과학대학</item>
+        <item>경상대학</item>
+        <item>공과대학</item>
+        <item>IT대학</item>
+        <item>농업생명과학대학</item>
+        <item>예술대학</item>
+        <item>사범대학</item>
+        <item>치과대학</item>
+        <item>수의과대학</item>
+        <item>생활과학대학</item>
+        <item>간호대학</item>
+        <item>약학대학</item>
+        <item>행정학부</item>
+        <item>자율전공부</item>
+        <item>법과대학</item>
+    </string-array>
+</resources>
