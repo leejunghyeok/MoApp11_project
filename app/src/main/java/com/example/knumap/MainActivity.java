@@ -143,7 +143,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 ArrayList<String> departmentList = new ArrayList<>(); // 학과 스피너에 넣을 리스트 생성
 
-                // sqlite로 부터 단과 대학에 따른 학과 리스트 가져올 예정
+                // sqlite로 부터 단과 대학에 따른 학과 리스트 가져옮
                 String sql = "select department from department where college=\""
                         + college.getSelectedItem().toString().replaceAll(" ", "").trim() + "\"";
                 Cursor cursor = database.rawQuery(sql, null);
