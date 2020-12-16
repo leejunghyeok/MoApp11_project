@@ -8,19 +8,17 @@ import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 
 import android.Manifest;
-import android.content.Context;
 import android.content.DialogInterface;
 import android.content.pm.PackageManager;
-import android.content.res.AssetManager;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.WindowManager;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
-import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -41,10 +39,7 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
 
 
@@ -97,14 +92,32 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         });
     }
 
+    public void setInfo(int start, int end) {
+        LinearLayout info = (LinearLayout) findViewById(R.id.info);
+        for (int i = end; i >= start; i--) {
+            if (i == 0) continue;
+            Button floor = new Button(this);
+            if (Build.VERSION.SDK_INT >= 21)
+                floor.setStateListAnimator(null);
+            floor.setBackgroundResource(R.drawable.button_click);
+            floor.setTextAppearance(this, R.style.FloorButton);
+            if (i > 0)
+                floor.setText(i + "층");
+            else
+                floor.setText("지하 " + i * (-1) + "층");
+            info.addView(floor);
+        }
+    }
+
     public void search() {
         final Button buttonCategory = (Button) findViewById(R.id.category);
         final Button buttonSearch = (Button) findViewById(R.id.search_button);
 
         final Spinner college = (Spinner) findViewById(R.id.college); // 단과대 스피너 생성
-        final Spinner department = (Spinner) findViewById(R.id.department); // 학과 스피너 생성
+        final Spinner department = (Spinner) findViewById(R.id.department);
 
-        final SQLiteDatabase database = DBHelper.getReadableDatabase();
+        final SQLiteDatabase database = DBHelper.getReadableDatabase(); // 데이터베이스 읽기 형식으로 불러오기
+
 
         ArrayAdapter<CharSequence> adapterCollege = ArrayAdapter.createFromResource(this, R.array.college, android.R.layout.simple_spinner_item); // 스피터에 넣을 배열 생성
         adapterCollege.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
@@ -113,13 +126,41 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
         ArrayList<String> departmentList = new ArrayList<>(); // 학과 스피너에 넣을 리스트 생성
 
-        // mysqlite로 부터 단과 대학에 따른 학과 리스트 가져올 예정
-        for (int i = 1; i <= 10; i++)
-            departmentList.add("학과 " + i);
-        departmentList.add("식품공학과");
+        // sqlite로 부터 단과 대학에 따른 학과 리스트 가져올 예정
+        String sql = "select department from department where college=\""
+                + college + "\"";
+        Cursor cursor = database.rawQuery(sql, null);
+        while (cursor.moveToNext())
+            departmentList.add(cursor.getString(0));
+
+        cursor.close();
 
         ArrayAdapter<String> departmentAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, departmentList);
         department.setAdapter(departmentAdapter);
+
+        college.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                ArrayList<String> departmentList = new ArrayList<>(); // 학과 스피너에 넣을 리스트 생성
+
+                // sqlite로 부터 단과 대학에 따른 학과 리스트 가져올 예정
+                String sql = "select department from department where college=\""
+                        + college.getSelectedItem().toString().replaceAll(" ", "").trim() + "\"";
+                Cursor cursor = database.rawQuery(sql, null);
+                while (cursor.moveToNext())
+                    departmentList.add(cursor.getString(0));
+
+                cursor.close();
+
+                ArrayAdapter<String> departmentAdapter = new ArrayAdapter<String>(getBaseContext(), android.R.layout.simple_list_item_1, departmentList);
+                department.setAdapter(departmentAdapter);
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+
+            }
+        });
 
         buttonCategory.setOnClickListener(new Button.OnClickListener() {
             @Override
@@ -136,7 +177,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             }
         });
 
-        final EditText editText = (EditText)findViewById(R.id.search); // 검색할 명칭 또는 교수님 성함
+        final EditText editText = (EditText) findViewById(R.id.search); // 검색할 명칭 또는 교수님 성함
         editText.setOnKeyListener(new View.OnKeyListener() {
             @Override
             public boolean onKey(View view, int i, KeyEvent keyEvent) {
@@ -153,37 +194,48 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             public void onClick(View v) {
                 String sql = "";
 
-                if(editText.getText().toString().equals("")) {
+                if (editText.getText().toString().equals("")) {
                     closeDrawer();
-                    Toast.makeText(v.getContext(),"아무것도 입력되지 않았습니다.", Toast.LENGTH_LONG).show();
+                    Toast.makeText(v.getContext(), "아무것도 입력되지 않았습니다.", Toast.LENGTH_LONG).show();
                     return;
                 }
 
-                if(buttonCategory.getText().toString().equals("교수 검색")) {
-
+                if (buttonCategory.getText().toString().equals("교수 검색")) {
+                    sql = "select f.location_left, f.location_right, f.location_up, f.location_down, f.floor_start, f.floor_end from Facility as f, Professor as p where p.professor_name=\""
+                            + editText.getText().toString().replaceAll(" ", "").trim()
+                            + "\" and f.facility_name = p.facility_name and p.department=\""
+                            + department.getSelectedItem().toString().replaceAll(" ", "").trim()
+                            + "\"";
                 } else {
-                    sql = "select location_left, location_right, location_up, location_down from Facility where facility_name=\"" + editText.getText().toString().replaceAll(" ", "").trim() + "\"";
+                    sql = "select location_left, location_right, location_up, location_down, floor_start, floor_end from Facility where facility_name=\""
+                            + editText.getText().toString().replaceAll(" ", "").trim() + "\"";
                 }
 
-                Cursor cursor = database.rawQuery(sql,null);
+                Cursor cursor = database.rawQuery(sql, null);
+                LinearLayout info = (LinearLayout) findViewById(R.id.info);
 
-                if(cursor.moveToFirst()) {
+                if (cursor.moveToFirst()) {
                     float x = (cursor.getFloat(0) + cursor.getFloat(1)) / 2;
                     float y = (cursor.getFloat(2) + cursor.getFloat(3)) / 2;
+                    int start = cursor.getInt(4);
+                    int end = cursor.getInt(5);
 
+                    setInfo(start, end);
                     LatLng latLng = new LatLng(y, x);
                     onMapClick(latLng);
+                    info.setVisibility(View.VISIBLE);
                 } else {
-                    marker.remove();
+                    if (marker != null) {
+                        marker.remove();
+                    }
                     LatLng latLng = new LatLng(35.888174, 128.611354); // 경북대학교 IT대학 융복합공학관
 
                     mMap.moveCamera(CameraUpdateFactory.newLatLng(latLng)); // 카메라 이동
                     mMap.moveCamera(CameraUpdateFactory.zoomTo(15));
 
-                    LinearLayout info = (LinearLayout) findViewById(R.id.info);
                     info.setVisibility(View.INVISIBLE);
 
-                    Toast.makeText(v.getContext(),"잘못된 입력입니다.", Toast.LENGTH_LONG).show();
+                    Toast.makeText(v.getContext(), "잘못된 입력입니다.", Toast.LENGTH_LONG).show();
                 }
                 cursor.close();
 
@@ -196,7 +248,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer);
                 drawer.closeDrawer(GravityCompat.START);
 
-                InputMethodManager manager = (InputMethodManager)getSystemService(INPUT_METHOD_SERVICE);
+                InputMethodManager manager = (InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
                 manager.hideSoftInputFromWindow(getCurrentFocus().getWindowToken(), InputMethodManager.HIDE_NOT_ALWAYS);
 
                 AnimationUtils.loadAnimation(getApplicationContext(), R.anim.translate_down);

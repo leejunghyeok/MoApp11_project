@@ -12,8 +12,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
-public class DataBaseHelper extends SQLiteOpenHelper
-{
+public class DataBaseHelper extends SQLiteOpenHelper {
 
     private static String TAG = "DataBaseHelper"; //Logcat에 출력할 태그이름
 
@@ -22,52 +21,43 @@ public class DataBaseHelper extends SQLiteOpenHelper
     // TODO : assets 폴더에 있는 경우 "", 그 외 경로기입
     private static String DB_PATH = "";
     // TODO : assets 폴더에 있는 DB명 또는 별도의 데이터베이스 파일이름
-    private static String DB_NAME ="KNU_map.db";
+    private static String DB_NAME = "KNU_map.db";
 
     private SQLiteDatabase mDataBase;
     private final Context mContext;
 
-    public DataBaseHelper(Context context)
-    {
+    public DataBaseHelper(Context context) {
         super(context, DB_NAME, null, 1);// 1은 데이터베이스 버젼
-        if(android.os.Build.VERSION.SDK_INT >= 17){
+        if (android.os.Build.VERSION.SDK_INT >= 17) {
             DB_PATH = context.getApplicationInfo().dataDir + "/databases/";
-        }
-        else
-        {
+        } else {
             DB_PATH = "/data/data/" + context.getPackageName() + "/databases/";
         }
         this.mContext = context;
     }
 
-    public void createDataBase() throws IOException
-    {
+    public void createDataBase() throws IOException {
         //데이터베이스가 없으면 asset폴더에서 복사해온다.
 
         this.getReadableDatabase();
         this.close();
-        try
-        {
+        try {
             //Copy the database from assests
             copyDataBase();
             Log.e(TAG, "createDatabase database created");
-        }
-        catch (IOException mIOException)
-        {
+        } catch (IOException mIOException) {
             throw new Error("ErrorCopyingDataBase");
         }
     }
 
     //assets폴더에서 데이터베이스를 복사한다.
-    private void copyDataBase() throws IOException
-    {
+    private void copyDataBase() throws IOException {
         InputStream mInput = mContext.getAssets().open(DB_NAME);
         String outFileName = DB_PATH + DB_NAME;
         OutputStream mOutput = new FileOutputStream(outFileName);
         byte[] mBuffer = new byte[1024];
         int mLength;
-        while ((mLength = mInput.read(mBuffer))>0)
-        {
+        while ((mLength = mInput.read(mBuffer)) > 0) {
             mOutput.write(mBuffer, 0, mLength);
         }
         mOutput.flush();
@@ -76,8 +66,7 @@ public class DataBaseHelper extends SQLiteOpenHelper
     }
 
     //데이터베이스를 열어서 쿼리를 쓸수있게만든다.
-    public boolean openDataBase() throws SQLException
-    {
+    public boolean openDataBase() throws SQLException {
         String mPath = DB_PATH + DB_NAME;
         //Log.v("mPath", mPath);
         mDataBase = SQLiteDatabase.openDatabase(mPath, null, SQLiteDatabase.CREATE_IF_NECESSARY);
@@ -86,9 +75,8 @@ public class DataBaseHelper extends SQLiteOpenHelper
     }
 
     @Override
-    public synchronized void close()
-    {
-        if(mDataBase != null)
+    public synchronized void close() {
+        if (mDataBase != null)
             mDataBase.close();
         super.close();
     }

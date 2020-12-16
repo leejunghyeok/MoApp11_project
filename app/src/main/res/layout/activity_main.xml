@@ -64,23 +64,6 @@
                 android:textAlignment="center"
                 android:textSize="18sp"
                 android:textStyle="bold" />
-
-            <Button
-                style="@style/FloorButton"
-                android:text="4층" />
-
-            <Button
-                style="@style/FloorButton"
-                android:text="3층" />
-
-            <Button
-                style="@style/FloorButton"
-                android:text="2층" />
-
-            <Button
-                style="@style/FloorButton"
-                android:text="1층" />
-
         </LinearLayout>
     </FrameLayout>
 
